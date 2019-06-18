@@ -11,6 +11,7 @@ type Dispenser    = Int
 type CajonDeFruta = String
 type Maquina      = (Helado -> Helado)
 
+type Cantidad = Int
 
 data Helado = Helado{
     gusto :: Gusto,
@@ -84,7 +85,7 @@ nuevosIngredientes ingredientes  = sinRepetidos.agrega ingredientes
 
 sinRepetidos :: [Ingrediente] -> [Ingrediente]
 sinRepetidos [] = []
-sinRepetidos (x:xs) = x : sinRepetidos (filter (/= x) xs)
+sinRepetidos (ingrediente:ingredientes) = ingrediente : sinRepetidos (filter (/= ingrediente) ingredientes)
 
 batidor :: CajonDeFruta -> Dispenser -> Maquina
 batidor fruta temperaturaDeldispenser helado = Helado{
@@ -150,8 +151,8 @@ foldr ($) heladoNeutro.reverse
 
 maquinasQuePreparanBien :: Helado -> [Maquina] -> [Maquina]
 maquinasQuePreparanBien helado = filter (\ maquina -> (estaBienPreparado.maquina ) helado)
-{-
 
+{-
 
                     ██████╗  ██████╗ ███╗   ██╗██╗   ██╗███████╗
                     ██╔══██╗██╔═══██╗████╗  ██║██║   ██║██╔════╝
@@ -163,30 +164,35 @@ maquinasQuePreparanBien helado = filter (\ maquina -> (estaBienPreparado.maquina
 
 ingredienteFavorito :: [Helado] -> String
 ingredienteFavorito helados = 
-    (obtenerElIngrediente.
+    (obteneIngredientes fst.
     segunLaCantidadMaxima (ingredienteYCantidad helados) .
     cantidadMaximaDelIngrediente
     )helados
-    
+ 
+cantidadMaximaDelIngrediente :: [Helado] -> Cantidad
 cantidadMaximaDelIngrediente = maximum.cantidadDeCadaIngrediente 
 
+cantidadDeCadaIngrediente :: [Helado] -> [Cantidad]
 cantidadDeCadaIngrediente helados = 
     (cantidades .
-    juntarSegunElIngrediente (todosLosingredientes helados).
+    juntaSegunElIngrediente (obteneIngredientes ingredientes $  helados).
     ingredienteSinRepetidos
     ) helados  
 
-juntarSegunElIngrediente ingredientes = map (\elemento -> filter (== elemento) ingredientes )  
+juntaSegunElIngrediente :: [Ingrediente] -> [Ingrediente] -> [[Ingrediente]]    
+juntaSegunElIngrediente ingredientes = map (\elemento -> filter (== elemento) ingredientes )  
 
+cantidades :: [[Ingrediente]] -> [Cantidad] 
 cantidades  = map length
 
-ingredienteSinRepetidos = sinRepetidos.concat.map ingredientes
+ingredienteSinRepetidos :: [Helado] -> [Ingrediente]
+ingredienteSinRepetidos = sinRepetidos.obteneIngredientes ingredientes
 
-todosLosingredientes = concat.map ingredientes
+obteneIngredientes :: (b -> [a]) -> [b] -> [a]
+obteneIngredientes condicion =  concat.map condicion
 
-ingredienteYCantidad  helados = zipWith (,) (ingredienteSinRepetidos helados) (cantidadDeCadaIngrediente helados) 
+ingredienteYCantidad :: [Helado] -> [(Ingrediente, Cantidad)] 
+ingredienteYCantidad  helados = zip (ingredienteSinRepetidos helados) (cantidadDeCadaIngrediente helados) 
 
-segunLaCantidadMaxima ingredientesConCantidades mayorCantidad  = (filter (\ ( _, cantidad) -> cantidad == mayorCantidad ) ) ingredientesConCantidades
-
-obtenerElIngrediente =  concat.map fst
-
+segunLaCantidadMaxima :: [(Ingrediente, Cantidad)] -> Cantidad -> [(Ingrediente,Cantidad)]
+segunLaCantidadMaxima ingredientesConCantidades mayorCantidad  = filter (\ ( _, cantidad) -> cantidad == mayorCantidad ) $ ingredientesConCantidades
